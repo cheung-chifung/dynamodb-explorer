@@ -9,12 +9,7 @@ const state = {
 
 const mutations = {
   [UPDATE_TABLE_LIST] (state, newTableList) {
-    console.log(state.list)
-    state.list.slice(0, state.list.length)
-    console.log(state.list)
-    newTableList.forEach(table => {
-      state.list.push(table)
-    })
+    state.list = newTableList
   }
 }
 

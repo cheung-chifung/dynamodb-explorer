@@ -13,6 +13,10 @@
         <i class="browser icon"></i>
         Tables
       </a>
+      <a class="item" v-link="{ path: '/query', activeClass: 'active' }">
+        <i class="edit icon"></i>
+        Queries
+      </a>
       <a class="item" v-link="{ path: '/help', activeClass: 'active' }">
         <i class="help circle icon"></i>
         Help

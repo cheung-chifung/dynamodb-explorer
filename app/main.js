@@ -6,6 +6,7 @@ import App from './app'
 
 import Connection from './components/views/connection'
 import Table from './components/views/table'
+import Query from './components/views/query'
 import Help from './components/views/help'
 
 import 'app/node_modules/semantic-ui-css/semantic.min.css'
@@ -26,6 +27,9 @@ router.map({
   },
   '/table': {
     component: Table
+  },
+  '/query': {
+    component: Query
   },
   '/help': {
     component: Help

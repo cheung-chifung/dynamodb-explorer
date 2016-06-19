@@ -30,6 +30,7 @@ module.exports = {
     fallback: [path.join(__dirname, '../node_modules')]
   },
   module: {
+    noParse: [/aws-sdk/],
     preLoaders: [
       {
         test: /\.vue$/,
