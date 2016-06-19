@@ -51,6 +51,6 @@ module.exports = {
     },
 
     // Whether or not open another Electron window with vue-devtools.
-    vueDevTools: true
+    vueDevTools: false
   }
 }

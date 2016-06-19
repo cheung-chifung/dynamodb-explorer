@@ -70,10 +70,19 @@ module.exports = {
           limit: 10000,
           name: path.join(config.build.assetsSubDirectory, '[name].[ext]')
         }
+      },
+      {
+        test: /\.css$/,
+        loader: "style-loader!css-loader"
       }
+
     ]
   },
   plugins: [
+    new webpack.ProvidePlugin({
+      $: 'app/node_modules/jquery',
+      jQuery: 'app/node_modules/jquery'
+    }),
     new webpack.ExternalsPlugin('commonjs2', [
       'desktop-capturer',
       'electron',

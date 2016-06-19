@@ -6,6 +6,11 @@
   "author": "Brad Stewart <me@bradstewart.co>",
   "main": "background.js",
   "dependencies": {
-    "jquery": "2.2.2"
+    "jquery": "2.2.2",
+    "semantic-ui-css": "^2.1.8",
+    "semantic-ui-dimmer": "^2.1.7",
+    "semantic-ui-modal": "^2.1.7",
+    "semantic-ui-sidebar": "^2.1.7",
+    "semantic-ui-transition": "^2.1.7"
   }
 }
