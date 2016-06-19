@@ -6,6 +6,7 @@
   "author": "Brad Stewart <me@bradstewart.co>",
   "main": "background.js",
   "dependencies": {
+    "ace-builds": "^1.2.2",
     "jquery": "2.2.2",
     "semantic-ui-css": "^2.1.8",
     "semantic-ui-dimmer": "^2.1.7",

@@ -22,4 +22,26 @@ export default class DynamoDBClient
       }
     })
   }
+
+  scan (params, callback) {
+    this.db.scan(params, (err, data) => {
+      if (err) {
+        console.log(err.stack)
+        callback(null)
+      } else {
+        callback(data)
+      }
+    })
+  }
+
+  query (params, callback) {
+    this.db.query(params, (err, data) => {
+      if (err) {
+        console.log(err.stack)
+        callback(null)
+      } else {
+        callback(data)
+      }
+    })
+  }
 }

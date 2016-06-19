@@ -1,0 +1,21 @@
+<template>
+  <div class="ui basic segment">
+    <h2 class="ui header">Query</h2>
+    <ace-editor @change="changeQuery"></ace-editor>
+  </div>
+</template>
+
+<script>
+  import AceEditor from '../widgets/ace_editor'
+
+  export default {
+    methods: {
+      changeQuery (query) {
+        this
+      },
+    },
+    components: {
+      AceEditor
+    }
+  }
+</script>

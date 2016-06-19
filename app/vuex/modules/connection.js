@@ -21,7 +21,7 @@ const mutations = {
     localStorage.setItem(CONNECTION_LIST_STORAGE_KEY, JSON.stringify(state.list))
   },
   [SET_CURRENT_CONNECTION] (state, newConnection) {
-    state.currennt = newConnection
+    state.current = newConnection
   }
 }
 
