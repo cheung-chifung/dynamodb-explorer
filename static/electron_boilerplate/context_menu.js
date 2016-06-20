@@ -35,15 +35,10 @@
     textMenu.append(paste);
 
     document.addEventListener('contextmenu', function(e) {
-
-        switch (e.target.nodeName) {
-            case 'TEXTAREA':
-            case 'INPUT':
-                e.preventDefault();
-                textMenu.popup(remote.getCurrentWindow());
-                break;
+        if (e.target.classList.contains('item-cell')) {
+            e.preventDefault();
+            textMenu.popup(remote.getCurrentWindow());
         }
-
     }, false);
 
 }());

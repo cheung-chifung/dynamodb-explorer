@@ -7,8 +7,8 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="record in records">
-          <td v-for="field in record">{{ field }}</td>
+        <tr v-for="record in records" track-by="$index">
+          <td v-for="field in record" track-by="$index" class="item-cell">{{ field }}</td>
         </tr>
       </tbody>
     </table>
@@ -45,4 +45,6 @@
 </script>
 
 <style scoped>
+  .item-cell {
+  }
 </style>

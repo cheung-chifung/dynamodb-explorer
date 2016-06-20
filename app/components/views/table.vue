@@ -15,8 +15,7 @@
     },
     vuex: {
       getters: {
-        query: state => state.query.query,
-        items: state => state.query.items
+        list: state => state.table.list
       }
     },
     components: {

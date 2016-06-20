@@ -8,6 +8,9 @@
         Run
       </button>
     </div>
+    <div class="ui basic segment">
+      <textarea v-model="ast" readonly="true" style="width:100%; height:400px;"></textarea>
+    </div>
     <item-table></item-table>
   </div>
 </template>
@@ -25,6 +28,10 @@
       query: {
         type: String,
         default: () => ''
+      },
+      ast: {
+        type: String,
+        default: () => ''
       }
     },
     vuex: {
@@ -39,18 +46,20 @@
     methods: {
       changeQuery: function (query) {
         this.query = query
-        console.log(query)
+        let p = new DdqlParser()
+        let ast = p.parse(this.query)
+        this.ast = JSON.stringify(ast, null, 4)
       },
       onRunQuery () {
         // TODO implement ast -> request
         let p = new DdqlParser()
         let ast = p.parse(this.query)
+        this.ast = JSON.stringify(ast, null, 4)
         if (ast.status) {
           let tableName = ast.value.table
           let params = {
             'TableName': tableName
           }
-          console.log(this.connection)
           let connector = new DynamoDBClient({
             key: this.connection.key,
             secret: this.connection.secret,
@@ -59,9 +68,7 @@
           connector.scan(params, (data) => {
             this.updateQueryItems(data['Items'])
           })
-          console.log(tableName)
         }
-        console.log(ast)
       }
     },
     components: {
