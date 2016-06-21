@@ -179,6 +179,13 @@ const conditionFunctionBeginsWith = P.seq(
   rparen
 )
 
+const conditionFunctionSize = P.seq(
+  lexeme(P.regex(/size/)),
+  lparen,
+  path,
+  rparen
+)
+
 // (a and b) and c
 // a and (b and c)
 // a in [c,d,e] and g > a and exists(k)
@@ -187,11 +194,11 @@ const condition = P.lazy(
   'a condition expression',
   () => P.sepBy1(
     P.alt(
+      notClause.then(condition),
       conditionComparisonExpression,
       conditionInExpression,
       conditionBetweenExpression,
       conditionFunctionExpression,
-      notClause.then(condition),
       lparen.then(condition.many()).skip(rparen)
     ),
     P.alt(
@@ -202,6 +209,7 @@ const condition = P.lazy(
 )
 
 const conditionOperand = P.alt(
+  conditionFunctionSize,
   path
 )
 
