@@ -1,6 +1,6 @@
 <template>
   <div class="ui basic segment editorBox">
-    <pre :id="editorIDName" class="editor">select * from customers;</pre>
+    <pre :id="editorIDName" class="editor">select * from customers where a > b or c = d and e > f;</pre>
   </div>
 </template>
 

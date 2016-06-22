@@ -11,6 +11,7 @@ import * as P from 'parsimmon'
 
 const lexeme = p => p.skip(P.optWhitespace)
 const opt = p => p.or(P.succeed(null))
+const sepBy1All = (p, sep) => P.seq(p, P.seq(sep, p).many()).map(node => [node[0]].concat(node[1][0]).concat(node[1][1]))
 
 const selectAction = lexeme(P.regex(/SELECT/i))
 
@@ -135,16 +136,16 @@ const conditionComparator = lexeme(P.alt(
 ))
 
 const dataType = lexeme(P.alt(
-  P.regex(/SS|stringset/i).map(() => 'StringSet'),
-  P.regex(/S|string/i).map(() => 'String'),
-  P.regex(/NS|numberset/i).map(() => 'NumberSet'),
-  P.regex(/NULL/i).map(() => 'Null'),
-  P.regex(/N|number/i).map(() => 'Number'),
-  P.regex(/BS|binaryset/i).map(() => 'BinarySet'),
-  P.regex(/BOOL|boolean/i).map(() => 'Bool'),
-  P.regex(/B|binary/i).map(() => 'Binary'),
-  P.regex(/L|list/i).map(() => 'List'),
-  P.regex(/M|map/i).map(() => 'Map')
+  P.regex(/SS|stringset/i).result('StringSet'),
+  P.regex(/S|string/i).result('String'),
+  P.regex(/NS|numberset/i).result('NumberSet'),
+  P.regex(/NULL/i).result('Null'),
+  P.regex(/N|number/i).result('Number'),
+  P.regex(/BS|binaryset/i).result('BinarySet'),
+  P.regex(/BOOL|boolean/i).result('Bool'),
+  P.regex(/B|binary/i).result('Binary'),
+  P.regex(/L|list/i).result('List'),
+  P.regex(/M|map/i).result('Map')
 ))
 
 const conditionFunctionAttributeExists = P.seq(
@@ -192,9 +193,9 @@ const conditionFunctionSize = P.seq(
 
 const condition = P.lazy(
   'a condition expression',
-  () => P.sepBy1(
+  () => sepBy1All(
     P.alt(
-      notClause.then(condition),
+      notClause.then(condition).map(node => ({ 'type': 'NOT', 'node': node })),
       conditionComparisonExpression,
       conditionInExpression,
       conditionBetweenExpression,
@@ -202,10 +203,13 @@ const condition = P.lazy(
       lparen.then(condition.many()).skip(rparen)
     ),
     P.alt(
-      andClause,
-      orClause
+      andClause.result('AND'),
+      orClause.result('OR')
     )
-  )
+  ).map(node => ({
+    'type': 'condition',
+    'node': node
+  }))
 )
 
 const conditionOperand = P.alt(
