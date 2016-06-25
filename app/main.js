@@ -19,6 +19,13 @@ $.fn.modal = require('app/node_modules/semantic-ui-modal')
 Vue.use(VueRouter)
 Vue.use(VueValidator)
 
+import QueryGenerator from 'app/libs/ddql/query_generator'
+let qg = new QueryGenerator()
+
+Vue.filter('attribute', function (value) {
+  return qg.getDdqlValue(value)
+})
+
 var router = new VueRouter()
 
 router.map({
@@ -37,4 +44,3 @@ router.map({
 })
 
 router.start(App, '#app')
-

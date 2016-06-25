@@ -8,8 +8,17 @@
         Run
       </button>
     </div>
-    <div class="ui basic segment">
-      <textarea v-model="ast" readonly="true" style="width:100%; height:400px;"></textarea>
+    <div class="ui two column stackable grid">
+      <div class="column">
+        <div class="ui segment">
+          <textarea v-model="ast" readonly="true" style="width:100%; height:300px;"></textarea>
+        </div>
+      </div>
+      <div class="column">
+        <div class="ui segment">
+          <textarea v-model="request" readonly="true" style="width:100%; height:300px;"></textarea>
+        </div>
+      </div>
     </div>
     <item-table></item-table>
   </div>
@@ -21,6 +30,7 @@
   import { updateQuery, updateQueryItems } from '../../vuex/actions'
 
   import DdqlParser from '../../libs/ddql/parser'
+  import QueryGenerator from '../../libs/ddql/query_generator'
   import DynamoDBClient from '../../services/dynamodb-client'
 
   export default {
@@ -32,6 +42,10 @@
       ast: {
         type: String,
         default: () => ''
+      },
+      request: {
+        type: String,
+        default: () => ''
       }
     },
     vuex: {
@@ -40,34 +54,51 @@
         updateQueryItems
       },
       getters: {
-        connection: state => state.connection.current
+        connection: state => state.connection.list[0]
       }
     },
     methods: {
       changeQuery: function (query) {
         this.query = query
         let p = new DdqlParser()
+        let qg = new QueryGenerator()
         let ast = p.parse(this.query)
         this.ast = JSON.stringify(ast, null, 4)
+
+        if (ast.status) {
+          let request = qg.generate(ast.value)
+          this.request = JSON.stringify(request, null, 4)
+        } else {
+          this.request = ''
+        }
       },
       onRunQuery () {
         // TODO implement ast -> request
         let p = new DdqlParser()
+        let qg = new QueryGenerator()
         let ast = p.parse(this.query)
         this.ast = JSON.stringify(ast, null, 4)
+
         if (ast.status) {
-          let tableName = ast.value.table
-          let params = {
-            'TableName': tableName
-          }
+          let request = qg.generate(ast.value)
+          this.request = JSON.stringify(request, null, 4)
+
           let connector = new DynamoDBClient({
             key: this.connection.key,
             secret: this.connection.secret,
             region: this.connection.region
           })
-          connector.scan(params, (data) => {
-            this.updateQueryItems(data['Items'])
-          })
+          if (request.method === 'scan') {
+            connector.scan(request.params, (data) => {
+              console.log(data)
+              this.updateQueryItems(data['Items'])
+            })
+          } else if (request.method === 'query') {
+            connector.query(request.params, (data) => {
+              console.log(data)
+              this.updateQueryItems(data['Items'])
+            })
+          }
         }
       }
     },

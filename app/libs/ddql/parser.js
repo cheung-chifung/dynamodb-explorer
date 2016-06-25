@@ -17,6 +17,7 @@ const selectAction = lexeme(P.regex(/SELECT/i))
 
 const fromClause = lexeme(P.regex(/FROM/i))
 const whereClause = lexeme(P.regex(/WHERE/i))
+const filterClause = lexeme(P.regex(/FILTER/i))
 const andClause = lexeme(P.regex(/AND/i))
 const orClause = lexeme(P.regex(/OR/i))
 const notClause = lexeme(P.regex(/NOT/i))
@@ -25,10 +26,12 @@ const betweenClause = lexeme(P.regex(/BETWEEN/i))
 const semicolonClause = lexeme(P.string(';'))
 const commaClause = lexeme(P.string(','))
 
-// const actionName = lexeme(P.regex(/SELECT|INSERT|UPDATE|DELETE/i)).map((n) => n)
+const opEqual = lexeme(P.string('='))
 
-const number = lexeme(P.regex(/[0-9]+/).map(parseInt))
-const string = lexeme(P.regex(/`[^`\\]*(?:\\.[^`\\]*)*`/))
+const string = lexeme(P.regex(/"((?:\\.|.)*?)"/, 1))
+const number = lexeme(P.regex(/-?(0|[1-9]\d*)([.]\d+)?(e[+-]?\d+)?/i))
+
+// const actionName = lexeme(P.regex(/SELECT|INSERT|UPDATE|DELETE/i)).map((n) => n)
 
 const tableName = lexeme(P.regex(/[a-zA-Z0-9_\-\.]{3,255}/))
 
@@ -63,22 +66,21 @@ const attributeName = P.alt(
   normalAttributeName
 )
 
-const attributePath = attributeName.map(node => ({
-  'type': 'attribute',
-  'value': node
-}))
-const hashKeyPath = lexeme(P.string('@@').then(attributeName)).map(node => ({
-  'type': 'hashKey',
-  'value': node
-}))
-const rangeKeyPath = lexeme(P.string('@').then(attributeName)).map(node => ({
-  'type': 'rangeKey',
-  'value': node
-}))
+// const attributePath = attributeName.map(node => ({
+//   'type': 'attribute',
+//   'value': node
+// }))
+// const hashKeyPath = lexeme(P.string('@@').then(attributeName)).map(node => ({
+//   'type': 'hashKey',
+//   'value': node
+// }))
+// const rangeKeyPath = lexeme(P.string('@').then(attributeName)).map(node => ({
+//   'type': 'rangeKey',
+//   'value': node
+// }))
 
 const projection = P.alt(
   lexeme(P.string('*')).map(() => ({'type': 'ALL'})),
-  lexeme(P.string('-')).map(() => ({'type': 'KEYS_ONLY'})),
   P.sepBy(attributeName, lexeme(P.string(','))).map((node) => ({
     'type': 'INCLUDE',
     'attributes': node
@@ -87,16 +89,13 @@ const projection = P.alt(
 
 const path = P.seq(
   P.sepBy1(
-    P.alt(
-      attributePath,
-      hashKeyPath,
-      rangeKeyPath
-    ),
+    attributeName,
     commaClause
   ),
   pathListIndex.many()
 ).map(node => ({
-  'attribute': node[0],
+  'type': 'path',
+  'attributes': node[0],
   'index': node[1]
 }))
 
@@ -195,11 +194,11 @@ const condition = P.lazy(
   'a condition expression',
   () => sepBy1All(
     P.alt(
-      notClause.then(condition).map(node => ({ 'type': 'NOT', 'node': node })),
+      notClause.then(condition).map(node => ({ 'type': 'NOT', 'condition': node })),
+      conditionFunctionExpression,
       conditionComparisonExpression,
       conditionInExpression,
       conditionBetweenExpression,
-      conditionFunctionExpression,
       lparen.then(condition.many()).skip(rparen)
     ),
     P.alt(
@@ -212,7 +211,13 @@ const condition = P.lazy(
   }))
 )
 
+const conditionDataOperand = P.alt(
+  number.map(node => ({'type': 'number', 'value': node})),
+  string.map(node => ({'type': 'string', 'value': node}))
+)
+
 const conditionOperand = P.alt(
+  conditionDataOperand,
   conditionFunctionSize,
   path
 )
@@ -258,9 +263,37 @@ const conditionComparisonExpression = P.seq(
   conditionOperand
 ).map(node => ({
   'clause': 'COMPARE',
-  'leftOperand': node[0],
+  'left': node[0],
   'comparator': node[1],
-  'rightOperand': node[2]
+  'right': node[2]
+}))
+
+const hashKeyConditionExpression = P.seq(
+  path,
+  opEqual,
+  conditionDataOperand
+).map(node => ({
+  'hashKey': node[0],
+  'value': node[2]
+}))
+
+const rangeKeyConditionExpression = P.seq(
+  path,
+  conditionComparator,
+  conditionDataOperand
+).map(node => ({
+  'rangeKey': node[0],
+  'comparator': node[1],
+  'value': node[2]
+}))
+
+const whereExpression = P.seq(
+  whereClause,
+  hashKeyConditionExpression,
+  opt(andClause.then(rangeKeyConditionExpression))
+).map(node => ({
+  'hashKeyCondition': node[1],
+  'rangeKeyCondition': node[2]
 }))
 
 // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.AccessingItemAttributes.html#DocumentPaths
@@ -268,13 +301,15 @@ const conditionComparisonExpression = P.seq(
 const selectParser = P.seq(
   selectAction.then(projection),
   fromClause.then(tableName),
-  opt(whereClause.then(condition)),
+  opt(whereExpression),
+  opt(filterClause.then(condition)),
   semicolonClause
 ).map(node => ({
   'action': 'select',
   'projection': node[0],
   'table': node[1],
-  'where': node[2]
+  'where': node[2],
+  'filter': node[3]
 }))
 
 console.log(conditionFunctionExpression)

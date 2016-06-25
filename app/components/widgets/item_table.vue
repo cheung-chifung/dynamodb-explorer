@@ -8,7 +8,7 @@
       </thead>
       <tbody>
         <tr v-for="record in records" track-by="$index">
-          <td v-for="field in record" track-by="$index" class="item-cell">{{ field }}</td>
+          <td v-for="field in record" track-by="$index" class="item-cell">{{ field | attribute }}</td>
         </tr>
       </tbody>
     </table>
