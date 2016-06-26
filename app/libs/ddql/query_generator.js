@@ -40,6 +40,16 @@ const selectGenerator = (ast) => {
         valIndex++
       }
       return valName
+    } else if (attr.type === 'type') {
+      let valOrigName = attr.value
+      let valName = replaceValues[valOrigName]
+      if (!valName) {
+        valName = ':v' + valIndex
+        attrValueRepr[valName] = {'S': attr.value}
+        replaceValues[valOrigName] = valName
+        valIndex++
+      }
+      return valName
     } else {
       let attrOrigName = attr.value
       let attrName = replaceAttributes[attrOrigName]
@@ -77,7 +87,16 @@ const selectGenerator = (ast) => {
 
   if (ast.filter) {
     let generateFunctionExpression = (ast) => {
-      return 'FUNCTION'
+      switch (ast.function) {
+        case 'attribute_exists':
+        case 'attribute_not_exists':
+          return ast.function + '(' + getAttrName(ast.args[0]) + ')'
+        case 'attribute_type':
+          return ast.function + '(' + getAttrName(ast.args[0]) + ',' + getAttrName(ast.args[1]) + ')'
+        case 'begins_with':
+          return ast.function + '(' + getAttrName(ast.args[0]) + ',' + getAttrName(ast.args[1]) + ')'
+      }
+      return ''
     }
     let generateConditionExpression = (ast) => {
       if (ast && ast.type === 'condition') {
@@ -88,11 +107,14 @@ const selectGenerator = (ast) => {
           }
           if (typeof condNode === 'object') {
             switch (condNode.type) {
-              case 'COMPARE':
+              case 'compare':
                 condExpr += ' ' + getAttrName(condNode.left) + ' ' + condNode.comparator + ' ' + getAttrName(condNode.right)
                 break
-              case 'FUNCTION':
+              case 'function':
                 condExpr += ' ' + generateFunctionExpression(condNode)
+                break
+              case 'condition':
+                condExpr += ' (' + generateConditionExpression(condNode) + ')'
                 break
             }
           } else if (typeof condNode === 'string') {
