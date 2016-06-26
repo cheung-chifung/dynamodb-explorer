@@ -7,6 +7,8 @@ import * as P from 'parsimmon'
  *
  * DELETE FROM table WHERE field1 = 2 AND field3 > 10
  *
+ * INSERT table VALUE
+ *
  */
 
 const lexeme = p => p.skip(P.optWhitespace)
@@ -14,22 +16,36 @@ const opt = p => p.or(P.succeed(null))
 const sepBy1All = (p, sep) => P.seq(p, P.seq(sep, p).many()).map(node => [node[0]].concat(node[1][0]).concat(node[1][1]))
 
 const selectAction = lexeme(P.regex(/SELECT/i))
+const insertAction = lexeme(P.regex(/INSERT INTO/i))
 
 const fromClause = lexeme(P.regex(/FROM/i))
 const whereClause = lexeme(P.regex(/WHERE/i))
 const filterClause = lexeme(P.regex(/FILTER/i))
+const valuesClause = lexeme(P.regex(/VALUES/i))
 const andClause = lexeme(P.regex(/AND/i))
 const orClause = lexeme(P.regex(/OR/i))
 const notClause = lexeme(P.regex(/NOT/i))
 const inClause = lexeme(P.regex(/IN/i))
 const betweenClause = lexeme(P.regex(/BETWEEN/i))
-const semicolonClause = lexeme(P.string(';'))
-const commaClause = lexeme(P.string(','))
+const colon = lexeme(P.string(':'))
+const semicolon = lexeme(P.string(';'))
+const comma = lexeme(P.string(','))
+const dot = lexeme(P.string('.'))
+const less = lexeme(P.string('<'))
+const greater = lexeme(P.string('>'))
+const lbrace = lexeme(P.string('{'))
+const rbrace = lexeme(P.string('}'))
+const lbracket = lexeme(P.string('['))
+const rbracket = lexeme(P.string(']'))
 
 const opEqual = lexeme(P.string('='))
 
 const string = lexeme(P.regex(/"((?:\\.|.)*?)"/, 1))
 const number = lexeme(P.regex(/-?(0|[1-9]\d*)([.]\d+)?(e[+-]?\d+)?/i))
+const binary = lexeme(P.seq(
+  P.regex(/b:|base64:/i),
+  P.regex(/([0-9a-zA-Z+/]{4})*(([0-9a-zA-Z+/]{2}==)|([0-9a-zA-Z+/]{3}=))?/)
+)).map(node => node[1])
 
 const tableName = lexeme(P.regex(/[a-zA-Z0-9_\-\.]{3,255}/))
 
@@ -60,6 +76,12 @@ const attributeName = P.alt(
   normalAttributeName
 )
 
+const dataAttributeName = P.alt(
+  reservedWordAttributeName,
+  reservedAttributeName,
+  normalAttributeName
+)
+
 // const attributePath = attributeName.map(node => ({
 //   'type': 'attribute',
 //   'value': node
@@ -84,7 +106,7 @@ const projection = P.alt(
 const path = P.seq(
   P.sepBy1(
     attributeName,
-    commaClause
+    dot
   ),
   pathListIndex.many()
 ).map(node => ({
@@ -173,7 +195,7 @@ const conditionFunctionAttributeType = P.seq(
   lexeme(P.regex(/attribute_type|type/i)),
   lparen,
   path,
-  commaClause,
+  comma,
   dataType,
   rparen
 ).map(node => ({
@@ -186,7 +208,7 @@ const conditionFunctionBeginsWith = P.seq(
   lexeme(P.regex(/begins_with|beginswith/)),
   lparen,
   path,
-  commaClause,
+  comma,
   string,
   rparen
 ).map(node => ({
@@ -255,7 +277,7 @@ const conditionInExpression = P.seq(
   lparen,
   P.sepBy1(
     conditionOperand,
-    commaClause
+    comma
   ),
   rparen
 ).map(node => ({
@@ -316,20 +338,141 @@ const whereExpression = P.seq(
   'rangeKeyCondition': node[2]
 }))
 
+const data = P.lazy('a data', () => P.alt(
+  numberData,
+  stringData,
+  binaryData,
+  nullData,
+  boolData,
+  numberSetData,
+  stringSetData,
+  binarySetData,
+  listData,
+  mapData
+))
+
+const numberData = number.map(node => ({'type': 'number', 'value': node}))
+const stringData = string.map(node => ({'type': 'string', 'value': node}))
+const binaryData = binary.map(node => ({'type': 'binary', 'value': node}))
+const nullData = lexeme(P.regex(/null/i)).result({'type': 'null', 'value': 'null'})
+const boolData = lexeme(P.regex(/true|false/i)).map(node => ({
+  'type': 'bool',
+  'value': node.toLowerCase()
+}))
+const numberSetData = P.seq(
+  less,
+  P.sepBy1(
+    number,
+    comma
+  ),
+  greater
+).map(node => ({
+  'type': 'numberSet',
+  'value': node[1]
+}))
+const stringSetData = P.seq(
+  less,
+  P.sepBy1(
+    string,
+    comma
+  ),
+  greater
+).map(node => ({
+  'type': 'stringSet',
+  'value': node[1]
+}))
+const binarySetData = P.seq(
+  less,
+  P.sepBy1(
+    binary,
+    comma
+  ),
+  greater
+).map(node => ({
+  'type': 'binarySet',
+  'value': node[1]
+}))
+const listData = P.seq(
+  lbracket,
+  P.sepBy1(
+    data,
+    comma
+  ),
+  rbracket
+).map(node => ({
+  'type': 'list',
+  'value': node[1]
+}))
+const mapData = P.seq(
+  lbrace,
+  P.sepBy1(
+    P.seq(
+      dataAttributeName,
+      colon,
+      data
+    ).map(node => ({
+      'attribute': node[0],
+      'value': node[2]
+    })),
+    comma
+  ),
+  rbrace
+).map(node => ({
+  'type': 'map',
+  'value': node[1]
+}))
+
+const columnsExpression = P.seq(
+  lparen,
+  P.sepBy1(
+    dataAttributeName,
+    comma
+  ),
+  rparen
+).map(node => ({
+  'type': 'columns',
+  'columns': node[1]
+}))
+
+const valuesExpression = P.sepBy1(
+  P.seq(
+    lparen,
+    P.sepBy1(
+      data,
+      comma
+    ),
+    rparen
+  ).map(node => node[1]),
+  comma
+).map(node => ({
+  'type': 'values',
+  'values': node
+}))
+
 // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.AccessingItemAttributes.html#DocumentPaths
 
 const selectParser = P.seq(
   selectAction.then(projection),
   fromClause.then(tableName),
   opt(whereExpression),
-  opt(filterClause.then(condition)),
-  semicolonClause
+  opt(filterClause.then(condition))
 ).map(node => ({
   'action': 'select',
   'projection': node[0],
   'table': node[1],
   'where': node[2],
   'filter': node[3]
+}))
+
+const insertParser = P.seq(
+  insertAction.then(tableName),
+  columnsExpression,
+  valuesClause.then(valuesExpression)
+).map(node => ({
+  'action': 'insert',
+  'table': node[0],
+  'columns': node[1],
+  'values': node[2]
 }))
 
 console.log(conditionFunctionExpression)
@@ -340,13 +483,17 @@ console.log(tableName)
 console.log(path)
 console.log(notClause)
 console.log(whereClause)
-console.log(semicolonClause)
+console.log(semicolon)
 console.log(pathListIndex)
 console.log(condition)
 console.log(number)
 
-const queryParser = P.alt(
-  selectParser
+const queryParser = P.seq(
+  P.alt(
+    selectParser,
+    insertParser
+  ),
+  semicolon
 )
 
 export default class {

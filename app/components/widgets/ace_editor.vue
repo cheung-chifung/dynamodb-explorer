@@ -1,6 +1,7 @@
 <template>
   <div class="ui basic segment editorBox">
-    <pre :id="editorIDName" class="editor">select * from customers where `account_id` = 345 filter `customer_id` = "サンキュー" and attribute_exists(`customer_id`) ;</pre>
+    <pre :id="editorIDName" class="editor">insert into customers (`customer_id`, `account_id`, `boolData`, `nullData`, `binary`, `stringSetData`, `numberSetData`, `base64Data`, `list`, `map`)
+    values ("testtest", 123, true, null, B:U29tZVN0cmluZ09idmlvdXNseU5vdEJhc2U2NEVuY29kZWQ=, <"str1", "str2">, <1, 2, 3>, < B:aGVsbG8=, base64:d29ybGQ= >, [1, "2", [3, 4]], {`a`: "b", `c`: 2} );</pre>
   </div>
 </template>
 
