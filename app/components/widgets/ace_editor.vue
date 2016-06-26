@@ -1,12 +1,15 @@
 <template>
   <div class="ui basic segment editorBox">
-    <pre :id="editorIDName" class="editor">select * from customers where `account_id` = 345 or `customer_id` = "NO";</pre>
+    <pre :id="editorIDName" class="editor">select * from customers where `account_id` = 345 filter `customer_id` = "サンキュー" and attribute_exists(`customer_id`) ;</pre>
   </div>
 </template>
 
 <script>
-  import 'app/node_modules/ace-builds/src-min-noconflict/ace'
-  const ACE = window.ace
+  import ACE from 'brace'
+  require('brace/theme/monokai')
+  require('brace/keybinding/vim')
+
+  ACE.$blockScrolling = Infinity
 
   export default {
     props: {
@@ -22,6 +25,8 @@
     },
     ready () {
       let editor = ACE.edit(this.editorIDName)
+      editor.setKeyboardHandler('ace/keyboard/vim')
+      editor.setTheme('ace/theme/monokai')
       editor.getSession().on('change', e => {
         this.$dispatch('change', editor.getSession().getValue())
       })

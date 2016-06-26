@@ -152,14 +152,22 @@ const conditionFunctionAttributeExists = P.seq(
   lparen,
   path,
   rparen
-)
+).map(node => ({
+  'type': 'FUNCTION',
+  'function': 'ATTRIBUTE_EXISTS',
+  'args': [node[2]]
+}))
 
 const conditionFunctionAttributeNotExists = P.seq(
   lexeme(P.regex(/attribute_not_exists|notexists/i)),
   lparen,
   path,
   rparen
-)
+).map(node => ({
+  'type': 'FUNCTION',
+  'function': 'ATTRIBUTE_NOT_EXISTS',
+  'args': [node[2]]
+}))
 
 const conditionFunctionAttributeType = P.seq(
   lexeme(P.regex(/attribute_type|type/i)),
@@ -168,7 +176,11 @@ const conditionFunctionAttributeType = P.seq(
   commaClause,
   dataType,
   rparen
-)
+).map(node => ({
+  'type': 'FUNCTION',
+  'function': 'ATTRIBUTE_TYPE',
+  'args': [node[2], node[4]]
+}))
 
 const conditionFunctionBeginsWith = P.seq(
   lexeme(P.regex(/begins_with|beginswith/)),
@@ -177,14 +189,22 @@ const conditionFunctionBeginsWith = P.seq(
   commaClause,
   string,
   rparen
-)
+).map(node => ({
+  'type': 'FUNCTION',
+  'function': 'BEGINS_WITH',
+  'args': [node[2], node[4]]
+}))
 
 const conditionFunctionSize = P.seq(
   lexeme(P.regex(/size/)),
   lparen,
   path,
   rparen
-)
+).map(node => ({
+  'type': 'FUNCTION',
+  'function': 'SIZE',
+  'args': [node[2]]
+}))
 
 // (a and b) and c
 // a and (b and c)
@@ -239,7 +259,7 @@ const conditionInExpression = P.seq(
   ),
   rparen
 ).map(node => ({
-  'clause': 'IN',
+  'type': 'IN',
   'operand': node[0],
   'list': node[3]
 }))
@@ -251,7 +271,7 @@ const conditionBetweenExpression = P.seq(
   andClause,
   conditionOperand
 ).map(node => ({
-  'clause': 'BETWEEN',
+  'type': 'BETWEEN',
   'operand': node[0],
   'min': node[2],
   'max': node[4]
@@ -262,7 +282,7 @@ const conditionComparisonExpression = P.seq(
   conditionComparator,
   conditionOperand
 ).map(node => ({
-  'clause': 'COMPARE',
+  'type': 'COMPARE',
   'left': node[0],
   'comparator': node[1],
   'right': node[2]

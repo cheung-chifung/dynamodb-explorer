@@ -76,6 +76,9 @@ const selectGenerator = (ast) => {
   }
 
   if (ast.filter) {
+    let generateFunctionExpression = (ast) => {
+      return 'FUNCTION'
+    }
     let generateConditionExpression = (ast) => {
       if (ast && ast.type === 'condition') {
         let condExpr = ''
@@ -84,15 +87,19 @@ const selectGenerator = (ast) => {
             return
           }
           if (typeof condNode === 'object') {
-            switch (condNode.clause) {
+            switch (condNode.type) {
               case 'COMPARE':
                 condExpr += ' ' + getAttrName(condNode.left) + ' ' + condNode.comparator + ' ' + getAttrName(condNode.right)
+                break
+              case 'FUNCTION':
+                condExpr += ' ' + generateFunctionExpression(condNode)
+                break
             }
           } else if (typeof condNode === 'string') {
             switch (condNode) {
               case 'AND':
               case 'OR':
-                condExpr += ' ' + condNode + ' '
+                condExpr += ' ' + condNode
             }
           }
         })

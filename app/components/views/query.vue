@@ -54,7 +54,7 @@
         updateQueryItems
       },
       getters: {
-        connection: state => state.connection.list[0]
+        connection: state => state.connection.current
       }
     },
     methods: {
