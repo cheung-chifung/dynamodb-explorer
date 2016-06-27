@@ -44,4 +44,15 @@ export default class DynamoDBClient
       }
     })
   }
+
+  putItem (params, callback) {
+    this.db.putItem(params, (err, data) => {
+      if (err) {
+        console.log(err.stack)
+        callback(null)
+      } else {
+        callback(data)
+      }
+    })
+  }
 }

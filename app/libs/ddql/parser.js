@@ -431,10 +431,10 @@ const columnsExpression = P.seq(
   rparen
 ).map(node => ({
   'type': 'columns',
-  'columns': node[1]
+  'value': node[1]
 }))
 
-const valuesExpression = P.sepBy1(
+const plainValuesExpression = P.sepBy1(
   P.seq(
     lparen,
     P.sepBy1(
@@ -446,7 +446,15 @@ const valuesExpression = P.sepBy1(
   comma
 ).map(node => ({
   'type': 'values',
-  'values': node
+  'value': node
+}))
+
+const mapValuesExpression = P.sepBy1(
+  mapData,
+  comma
+).map(node => ({
+  'type': 'values',
+  'value': node
 }))
 
 // https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Expressions.AccessingItemAttributes.html#DocumentPaths
@@ -464,15 +472,24 @@ const selectParser = P.seq(
   'filter': node[3]
 }))
 
-const insertParser = P.seq(
+const insertWithColumnsParser = P.seq(
   insertAction.then(tableName),
   columnsExpression,
-  valuesClause.then(valuesExpression)
+  valuesClause.then(plainValuesExpression)
 ).map(node => ({
   'action': 'insert',
   'table': node[0],
   'columns': node[1],
   'values': node[2]
+}))
+
+const insertWithoutColumnsParser = P.seq(
+  insertAction.then(tableName),
+  valuesClause.then(mapValuesExpression)
+).map(node => ({
+  'action': 'insert',
+  'table': node[0],
+  'values': node[1]
 }))
 
 console.log(conditionFunctionExpression)
@@ -491,10 +508,10 @@ console.log(number)
 const queryParser = P.seq(
   P.alt(
     selectParser,
-    insertParser
-  ),
-  semicolon
-)
+    insertWithColumnsParser,
+    insertWithoutColumnsParser
+  ).skip(semicolon)
+).map(node => node[0])
 
 export default class {
   parse (ddqlQuery) {

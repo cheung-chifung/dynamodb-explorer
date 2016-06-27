@@ -147,8 +147,55 @@ const updateGenerator = (ast) => {
 }
 
 const insertGenerator = (ast) => {
+  let getItemData = (item) => {
+    switch (item.type) {
+      case 'number':
+        return {'N': item.value}
+      case 'string':
+        return {'S': item.value}
+      case 'binary':
+        return {'B': item.value}
+      case 'null':
+        return {'NULL': true}
+      case 'bool':
+        return {'BOOL': item.value === 'true'}
+      case 'stringSet':
+        return {'SS': item.value}
+      case 'numberSet':
+        return {'NS': item.value}
+      case 'binarySet':
+        return {'BS': item.value}
+      case 'list':
+        return {'L': item.value.map(getItemData)}
+      case 'map':
+        let map = {}
+        item.value.forEach(node => {
+          map[node.attribute.value] = getItemData(node.value)
+        })
+        return {'M': map}
+      default:
+        return {}
+    }
+  }
+
   let params = {}
   params['TableName'] = ast.table
+
+  let itemList = []
+  if (ast.columns) {
+    let columns = ast.columns.value.map(node => node.value)
+    itemList = ast.values.value.map(value => {
+      let map = {}
+      columns.forEach((column, i) => {
+        map[column] = getItemData(value[i])
+      })
+      return map
+    })
+  } else {
+    itemList = ast.values.value.map(node => getItemData(node)['M'])
+  }
+
+  params['Item'] = itemList[0]
   return {'method': 'putItem', 'params': params}
 }
 

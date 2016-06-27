@@ -98,6 +98,10 @@
               console.log(data)
               this.updateQueryItems(data['Items'])
             })
+          } else if (request.method === 'putItem') {
+            connector.putItem(request.params, (data) => {
+              console.log(data)
+            })
           }
         }
       }
