@@ -43,7 +43,8 @@
         let connector = new DynamoDBClient({
           key: this.connection.key,
           secret: this.connection.secret,
-          region: this.connection.region
+          region: this.connection.region,
+          endpoint: this.connection.endpoint
         })
         connector.listTable(tables => {
           if (tables) {

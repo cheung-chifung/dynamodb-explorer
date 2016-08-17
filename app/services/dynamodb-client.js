@@ -8,7 +8,8 @@ export default class DynamoDBClient
     this.db = new AWS.DynamoDB({
       accessKeyId: config.key,
       secretAccessKey: config.secret,
-      region: config.region
+      region: config.region,
+      endpoint: config.endpoint
     })
   }
 
