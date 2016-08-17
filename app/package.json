@@ -13,5 +13,8 @@
     "semantic-ui-modal": "^2.1.7",
     "semantic-ui-sidebar": "^2.1.7",
     "semantic-ui-transition": "^2.1.7"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.5.1"
   }
 }
